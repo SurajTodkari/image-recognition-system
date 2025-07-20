@@ -1,0 +1,49 @@
+name: Python Package using Conda on Windows
+
+on: 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Step 2: Set up Python (needed for conda and tooling)
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    # Step 3: Add conda to PATH
+    - name: Add conda to system path
+      shell: pwsh
+      run: |
+        echo "$env:CONDA\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    # Step 4: Install dependencies from environment.yml
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        conda env update --file environment.yml --name base
+
+    # Step 5: Lint using flake8
+    - name: Lint with flake8
+      shell: pwsh
+      run: |
+        conda install -y flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # Step 6: Run tests using pytest
+    - name: Run tests with pytest
+      shell: pwsh
+      run: |
+        conda install -y pytest
+        pytest
